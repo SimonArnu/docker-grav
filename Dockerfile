@@ -7,7 +7,7 @@ RUN a2enmod rewrite expires
 # install the PHP extensions we need
 RUN apt-get update && apt-get install -y git libpng-dev libjpeg-dev zlib1g-dev && rm -rf /var/lib/apt/lists/* \
 	&& docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr \
-	&& docker-php-ext-install gd mysqli opcache zip mbstring
+	&& docker-php-ext-install gd mysqli opcache zip mbstring exif
 
 # set recommended PHP.ini settings
 # see https://secure.php.net/manual/en/opcache.installation.php
@@ -29,6 +29,6 @@ RUN curl -o grav.tar.gz -SL https://github.com/getgrav/grav/archive/${GRAV_VERSI
 	&& chown -R www-data:www-data /var/www/html
 
 COPY docker-entrypoint.sh /entrypoint.sh
-RUN docker-php-ext-install exif
+
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["apache2-foreground"]
