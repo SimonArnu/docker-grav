@@ -28,6 +28,32 @@ RUN curl -o grav.tar.gz -SL https://github.com/getgrav/grav/archive/${GRAV_VERSI
 	&& /var/www/html/bin/grav install \
 	&& chown -R www-data:www-data /var/www/html
 
+RUN cd /var/www/html && bin/gpm install -f -y admin lingonberry comments jscomments
+
+ENV DEBIAN_FRONTEND noninteractive
+ENV LETSENCRYPT_HOME /etc/letsencrypt
+ENV DOMAINS "arnu.de"
+ENV WEBMASTER_MAIL "simon@arnu.de"
+
+RUN mkdir -p  /etc/container_environment
+# Manually set the apache environment variables in order to get apache to work immediately.
+RUN echo $WEBMASTER_MAIL > /etc/container_environment/WEBMASTER_MAIL && \
+    echo $DOMAINS > /etc/container_environment/DOMAINS && \
+    echo $LETSENCRYPT_HOME > /etc/container_environment/LETSENCRYPT_HOME
+
+CMD ["/sbin/my_init"]
+RUN echo 'deb http://ftp.debian.org/debian stretch-backports main' >> /etc/apt/sources.list && \
+    apt-get -y update && \
+    apt-get install -q -y python-certbot-apache -t stretch-backports && \
+    apt-get clean
+RUN a2enmod ssl
+
+#RUN git clone https://github.com/letsencrypt/letsencrypt
+#RUN cd letsencrypt && ./letsencrypt-auto --apache -d arnu.de
+COPY default-ssl.conf /etc/apache2/sites-available/
+RUN mkdir -p /root/certs/
+RUN cd /root/certs/ && openssl req -nodes -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -keyout DummyKey.key -out DummyCertificate.crt -subj "/C=DE/ST=nv/L=nv/O=SDummy Network/OU=nv/CN=dummy.org" && chmod 400 /root/certs/DummyKey.key
+RUN a2ensite default-ssl.conf
 COPY docker-entrypoint.sh /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
